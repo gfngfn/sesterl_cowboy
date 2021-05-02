@@ -17,6 +17,8 @@ module Cowboy :> sig
 
   val start_clear<$eff> : fun(-name binary, -port int, -dispatch dispatch_table) -> [$eff]option<listener>
 
+  val method : fun(req) -> binary
+
   val bindings : fun(req) -> Stdlib.RawMap.t<binary, binary>
 
   val parse_qs : fun(req) -> Stdlib.RawMap.t<binary, option<binary>>
@@ -71,6 +73,11 @@ end = struct
             {ok, ListenerPid} -> {some, ListenerPid};
             {error, _}        -> none
         end.
+  ```
+
+  val method : fun(req) -> binary = external 1 ```
+    method(Req) ->
+        cowboy_req:method(Req).
   ```
 
   val bindings : fun(req) -> Stdlib.RawMap.t<binary, binary> = external 1 ```

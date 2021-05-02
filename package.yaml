@@ -1,0 +1,31 @@
+package: "sesterl_cowboy"
+
+source_directories:
+  - "./src"
+
+main_module: "Cowboy"
+
+dependencies:
+  - name: "sesterl_stdlib"
+    source:
+      type: "git"
+      repository: "https://github.com/gfngfn/sesterl_stdlib"
+      spec:
+        type: "branch"
+        value: "master"
+
+erlang:
+  output_directory: "./_generated"
+  erlang_dependencies:
+    - name: "cowboy"
+      source:
+        type: "hex"
+        version: "2.8.0"
+  relx:
+    release:
+      name: "sesterl_cowboy"
+      version: "0.1.0"
+      applications:
+        - "cowboy"
+        - "sesterl_cowboy"
+    dev_mode: true

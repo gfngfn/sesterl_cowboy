@@ -1,0 +1,16 @@
+{application, sesterl_cowboy, [
+    {description, "A Cowboy wrapper for Sesterl"},
+    {vsn, "0.0.1"},
+    {registered, []},
+    {modules, []},
+    {applications, [
+        kernel,
+        stdlib,
+        sesterl_stdlib
+    ]},
+    {env, []},
+    {modules, []},
+
+    {licenses, ["MIT"]},
+    {links, []}
+]}.

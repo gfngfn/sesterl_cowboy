@@ -9,7 +9,11 @@ module Cowboy :> sig
 
   type header = Stdlib.RawMap.t<binary, binary>
 
-  val make_dispatch_table<$msg, $state> : fun(frozen<{req, $state}, $msg, init_result<$state>>, list<{binary, $state}>) -> option<dispatch_table>
+  signature Handler = sig
+    val init<$msg, $state> : fun(req, $state) -> [$msg]init_result<$state>
+  end
+
+  val make_dispatch_table<$msg, $state> : fun(pack Handler, list<{binary, $state}>) -> option<dispatch_table>
 
   val start_clear<$eff> : fun(-name binary, -port int, -dispatch dispatch_table) -> [$eff]option<listener>
 
@@ -34,14 +38,17 @@ end = struct
 
   type header = Stdlib.RawMap.t<binary, binary>
 
-  val make_dispatch_table<$msg, $state> : fun(frozen<{req, $state}, $msg, init_result<$state>>, list<{binary, $state}>) -> option<dispatch_table>
+  signature Handler = sig
+    val init<$msg, $state> : fun(req, $state) -> [$msg]init_result<$state>
+  end
+
+  val make_dispatch_table<$msg, $state> : fun(pack Handler, list<{binary, $state}>) -> option<dispatch_table>
   = external 2 ```
-    make_dispatch_table(MFArgs, Routes) ->
+    make_dispatch_table(HandlerModule, Routes) ->
         try
-            {M, init, []} = MFArgs,
             Dispatch =
                 cowboy_router:compile([
-                    {'_', lists:map(fun({Path, InitialState}) -> {Path, M, InitialState} end, Routes)}
+                    {'_', lists:map(fun({Path, InitialState}) -> {Path, HandlerModule, InitialState} end, Routes)}
                 ]),
             {some, Dispatch}
         catch

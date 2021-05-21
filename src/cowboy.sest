@@ -30,13 +30,17 @@ module Cowboy :> sig
   val stop_listener<$a> : fun(binary) -> [$a]unit
 end = struct
 
-  type req = ReqDummy
+  type req =
+    | ReqDummy
 
-  type dispatch_table = DispatchTableDummy
+  type dispatch_table =
+    | DispatchTableDummy
 
-  type listener = ListenerDummy
+  type listener =
+    | ListenerDummy
 
-  type init_result<$state> = InitResultDummy
+  type init_result<$state> =
+    | InitResultDummy
 
   type header = Stdlib.RawMap.t<binary, binary>
 

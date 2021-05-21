@@ -1,4 +1,6 @@
 module Cowboy :> sig
+  open Stdlib
+
   type req :: o
 
   type dispatch_table :: o
@@ -7,21 +9,23 @@ module Cowboy :> sig
 
   type init_result :: (o) -> o
 
-  type header = Stdlib.RawMap.t<binary, binary>
+  type header = RawMap.t<binary, binary>
+
+  type error_reason = RawValue.t
 
   signature Handler = sig
     val init<$msg, $state> : fun(req, $state) -> [$msg]init_result<$state>
   end
 
-  val make_dispatch_table<$msg, $state> : fun(pack Handler, list<{binary, $state}>) -> option<dispatch_table>
+  val make_dispatch_table<$msg, $state> : fun(pack Handler, list<{binary, $state}>) -> result<dispatch_table, error_reason>
 
-  val start_clear<$eff> : fun(-name binary, -port int, -dispatch dispatch_table) -> [$eff]option<listener>
+  val start_clear<$eff> : fun(-name binary, -port int, -dispatch dispatch_table) -> [$eff]result<listener, error_reason>
 
   val method : fun(req) -> binary
 
-  val bindings : fun(req) -> Stdlib.RawMap.t<binary, binary>
+  val bindings : fun(req) -> RawMap.t<binary, binary>
 
-  val parse_qs : fun(req) -> Stdlib.RawMap.t<binary, option<binary>>
+  val parse_qs : fun(req) -> RawMap.t<binary, option<binary>>
 
   val reply<$a> : fun(int, header, binary, req) -> [$a]req
 
@@ -29,6 +33,7 @@ module Cowboy :> sig
 
   val stop_listener<$a> : fun(binary) -> [$a]unit
 end = struct
+  open Stdlib
 
   type req =
     | ReqDummy
@@ -42,13 +47,15 @@ end = struct
   type init_result<$state> =
     | InitResultDummy
 
-  type header = Stdlib.RawMap.t<binary, binary>
+  type header = RawMap.t<binary, binary>
+
+  type error_reason = RawValue.t
 
   signature Handler = sig
     val init<$msg, $state> : fun(req, $state) -> [$msg]init_result<$state>
   end
 
-  val make_dispatch_table<$msg, $state> : fun(pack Handler, list<{binary, $state}>) -> option<dispatch_table>
+  val make_dispatch_table<$msg, $state> : fun(pack Handler, list<{binary, $state}>) -> result<dispatch_table, error_reason>
   = external 2 ```
     make_dispatch_table(HandlerModule, Routes) ->
         try
@@ -56,27 +63,23 @@ end = struct
                 cowboy_router:compile([
                     {'_', lists:map(fun({Path, InitialState}) -> {Path, HandlerModule, InitialState} end, Routes)}
                 ]),
-            {some, Dispatch}
+            {ok, Dispatch}
         catch
-            _:_ ->
-                none
+            Class:Reason ->
+                {error, {exception, Class, Reason}}
         end.
   ```
 
-  val start_clear<$eff> : fun(-dispatch dispatch_table, -name binary, -port int) -> [$eff]option<listener>
+  val start_clear<$eff> : fun(-dispatch dispatch_table, -name binary, -port int) -> [$eff]result<listener, error_reason>
   = external 3 ```
     start_clear(Dispatch, NameBin, Port) ->
-    % label parameters are in alphabetical order
-        Result =
-            cowboy:start_clear(
-                erlang:binary_to_atom(NameBin),
-                [{port, Port}],
-                #{env => #{dispatch => Dispatch}}
-            ),
-        case Result of
-            {ok, ListenerPid} -> {some, ListenerPid};
-            {error, _}        -> none
-        end.
+    %% Labeled parameters are in the alphabetical order
+        cowboy:start_clear(
+            erlang:binary_to_atom(NameBin),
+            [{port, Port}],
+            #{env => #{dispatch => Dispatch}}
+        ).
+        %% Return values are of `{ok, ListenerPid :: pid()} | {error, Reason :: term()}'
   ```
 
   val method : fun(req) -> binary = external 1 ```
@@ -84,7 +87,7 @@ end = struct
         cowboy_req:method(Req).
   ```
 
-  val bindings : fun(req) -> Stdlib.RawMap.t<binary, binary> = external 1 ```
+  val bindings : fun(req) -> RawMap.t<binary, binary> = external 1 ```
     bindings(Req) ->
         %% Bindings :: #{atom() => any()}
         Bindings = cowboy_req:bindings(Req),
@@ -99,14 +102,14 @@ end = struct
             Bindings).
   ```
 
-  val parse_qs : fun(req) -> Stdlib.RawMap.t<binary, option<binary>> = external 1 ```
+  val parse_qs : fun(req) -> RawMap.t<binary, option<binary>> = external 1 ```
     parse_qs(Req) ->
         Assoc = cowboy_req:parse_qs(Req),
         lists:foldl(
             fun({KeyBin, Value}, Map) ->
                 case Value of
-                    true     -> Map#{KeyBin => none};
-                    ValueBin -> Map#{KeyBin => {some, ValueBin}}
+                    true     -> Map#{KeyBin => error};
+                    ValueBin -> Map#{KeyBin => {ok, ValueBin}}
                 end
             end,
             #{},

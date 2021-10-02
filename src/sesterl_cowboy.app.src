@@ -1,6 +1,6 @@
 {application, sesterl_cowboy, [
     {description, "A Cowboy wrapper for Sesterl"},
-    {vsn, "0.0.1"},
+    {vsn, "0.1.0"},
     {registered, []},
     {modules, []},
     {applications, [

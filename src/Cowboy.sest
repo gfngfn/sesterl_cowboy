@@ -75,7 +75,7 @@ end = struct
     start_clear(Dispatch, NameBin, Port) ->
     %% Labeled parameters are in the alphabetical order
         cowboy:start_clear(
-            erlang:binary_to_atom(NameBin),
+            erlang:binary_to_atom(NameBin, utf8),
             [{port, Port}],
             #{env => #{dispatch => Dispatch}}
         ).
@@ -128,7 +128,7 @@ end = struct
 
   val stop_listener<$a> : fun(binary) -> [$a]unit = external 1 ```
     stop_listener(NameBin) ->
-        _ = cowboy:stop_listener(erlang:binary_to_atom(NameBin)),
+        _ = cowboy:stop_listener(erlang:binary_to_atom(NameBin, utf8)),
         ok.
   ```
 
